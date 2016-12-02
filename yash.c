@@ -514,8 +514,8 @@ void exec_line(CmplxCommand *command) {
 char *read_line() {
 	char *line_entered = NULL;      //to contain the command line
 	ssize_t size_line = 0;
-	getline(&line_entered, &size_line, stdin);
-
+	if(getline(&line_entered, &size_line, stdin) == -1)
+		exit(0);
 	return line_entered;
 }
 
