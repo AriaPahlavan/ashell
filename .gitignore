@@ -46,3 +46,7 @@ threads/
 .idea/*
 CMakeLists.txt
 cmake-build-debug/*
+a
+ashell.c
+yash
+ashell
