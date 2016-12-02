@@ -187,7 +187,6 @@ void addBasicCmd(CmplxCommand *cc, BasicCommand *newCmd) {
  * @param token
  */
 void addFile(CmplxCommand *cmplxCmd, char *token, enum FileType type) {
-	token = strtok(NULL, TOKEN_DELIMITER);
 
 	switch (type) {
 		case INPUT:
@@ -218,6 +217,82 @@ void addFile(CmplxCommand *cmplxCmd, char *token, enum FileType type) {
 
 }
 
+
+
+/**
+ * @param token
+ * @return true if token is one of '>', '<', '2>' or '|'
+ */
+bool isRedirectionToken(char *token) {
+	bool isRedirection = false;
+
+	if (strcmp((const char *) token, GREAT) == 0
+		|| strcmp((const char *) token, LESS) == 0
+		|| strcmp((const char *) token, TWOGREAT) == 0
+		|| strcmp((const char *) token, PIPE) == 0
+		|| strcmp(&token[strlen(token) - 1], AMPERSAND) == 0
+			) {
+
+		isRedirection = true;
+
+	}
+
+	return isRedirection;
+}
+
+
+
+
+/**
+ * process redirections based on type
+ * @param cmplxCmd
+ * @param token
+ * @param nextToken
+ */
+char * processRedirection
+		(CmplxCommand *cmplxCmd, BasicCommand* basicCommand, char *token, char *nextToken) {
+
+
+	if (strcmp((const char *) token, GREAT) == 0) {
+
+		addFile(cmplxCmd, nextToken, OUTPUT);
+		return  strtok(NULL, TOKEN_DELIMITER);
+
+	}
+	else if (strcmp((const char *) token, LESS) == 0) {
+
+		addFile(cmplxCmd, nextToken, INPUT);
+		return strtok(NULL, TOKEN_DELIMITER);
+
+
+	}
+	else if (strcmp((const char *) token, TWOGREAT) == 0) {
+
+		addFile(cmplxCmd, nextToken, ERROR);
+		return strtok(NULL, TOKEN_DELIMITER);
+
+	}
+	else if (strcmp((const char *) token, PIPE) == 0) {
+		return nextToken;
+	}
+	else if (strcmp((const char *) token, AMPERSAND) == 0) {
+
+		//this process will be in background
+		cmplxCmd->isBackground = true;
+		return NULL;
+	}
+	else if (strcmp(&token[strlen(token) - 1], AMPERSAND) == 0) {
+
+		//this process will be in background
+		cmplxCmd->isBackground = true;
+		token[strlen(token) - 1] = '\0';
+		addArg(basicCommand, token);
+		return NULL;
+
+
+	}
+}
+
 /**
  * Parses the command into CmplexCommand tree
  */
@@ -234,51 +309,22 @@ CmplxCommand *parseCmd(char *line) {
 	// process tokens
 	while (token != NULL) {
 
+		char* nextToken = strtok(NULL, TOKEN_DELIMITER);
 
-		//check the tokens for validity, '>', '<', "2>", and '&'
-		if (strcmp((const char *) token, GREAT) == 0) {
-
-			basicCmd = addnCreateBasicCmd(cmplxCmd, basicCmd);
-			addFile(cmplxCmd, token, OUTPUT);
-
-		} else if (strcmp((const char *) token, LESS) == 0) {
-
-			basicCmd = addnCreateBasicCmd(cmplxCmd, basicCmd);
-			addFile(cmplxCmd, token, INPUT);
-
-		} else if (strcmp((const char *) token, TWOGREAT) == 0) {
-
-			basicCmd = addnCreateBasicCmd(cmplxCmd, basicCmd);
-			addFile(cmplxCmd, token, ERROR);
-
-		} else if (strcmp((const char *) token, PIPE) == 0) {
-
-			basicCmd = addnCreateBasicCmd(cmplxCmd, basicCmd);
-
-		} else if (strcmp(&token[strlen(token) - 1], AMPERSAND) == 0) {
-
-			//this process will be in background
-			cmplxCmd->isBackground = true;
-			token[strlen(token) - 1] = '\0';
-			addArg(basicCmd, token);
-
-			basicCmd = addnCreateBasicCmd(cmplxCmd, basicCmd);
-
-		} else if (strcmp(&token[strlen(token) - 1], AMPERSAND) == 0) {
-
-			//this process will be in background
-			cmplxCmd->isBackground = true;
-			addArg(basicCmd, token);
-
-			basicCmd = addnCreateBasicCmd(cmplxCmd, basicCmd);
-
-		} else { //it's an arg for simple command
+		if (isRedirectionToken(token)){// '>', '<', "2>", or '&'
+			nextToken = processRedirection(cmplxCmd, basicCmd, token, nextToken);
+		}
+		else { //simple command
 
 			addArg(basicCmd, token);
 
+
+			if (nextToken != NULL && isRedirectionToken(nextToken))
+				basicCmd = addnCreateBasicCmd(cmplxCmd, basicCmd);
 
 		}
-		token = strtok(NULL, TOKEN_DELIMITER);
+
+		token = nextToken;
 	}
 
 	if (basicCmd->numArg != 0) {
@@ -380,9 +426,9 @@ void exec_line(CmplxCommand *command) {
 			//for first command
 //			if (i == 1) {
 //				setsid(); // child 1 creates a new session and a new group and becomes leader -
-				//   group id is same as his pid: cpid1
+			//   group id is same as his pid: cpid1
 //			} else {
-				setpgid(0, cpids[0]); //next children join the group whose group id is same as first child's pid
+			setpgid(0, cpids[0]); //next children join the group whose group id is same as first child's pid
 //			}
 //
 			//execute one basic command
