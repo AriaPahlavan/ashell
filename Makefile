@@ -1,2 +1,2 @@
 all:
-	gcc -o yash yash.c
+	gcc -ggdb -o yash yash.c

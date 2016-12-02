@@ -27,12 +27,18 @@ enum FileType {
 };
 
 
-static void sig_int(int signo, __pid_t pid) {
-	kill(pid, SIGINT);
+static void sig_hup(int signo) {
+	kill(getpid(), SIGTERM);
 }
 
-static void sig_tstp(int signo, __pid_t pid) {
-	kill(pid, SIGTSTP);
+
+static void sig_int(int signo) {
+	printf("SIGINIT");
+//	kill(getpid(), SIGCONT);
+}
+
+static void sig_tstp(int signo) {
+	kill(getpid(), SIGTSTP);
 }
 
 
@@ -293,6 +299,8 @@ char * processRedirection
 	}
 }
 
+
+
 /**
  * Parses the command into CmplexCommand tree
  */
@@ -336,12 +344,15 @@ CmplxCommand *parseCmd(char *line) {
 }
 
 
+
 void initAllNegative(int *array, int size) {
 
 	for (int i = 0; i < size; ++i) {
 		array[i] = -2;
 	}
 }
+
+
 
 /**
  * Method to execute the command line
@@ -446,13 +457,8 @@ void exec_line(CmplxCommand *command) {
 		}
 
 	} //end loop
-//
-//	if (cpid1 > 0) {
-//		if (signal(SIGINT, sig_int) == SIG_ERR)
-//			printf("signal(SIGINT) errorFile");
-//		if (signal(SIGTSTP, sig_tstp) == SIG_ERR)
-//			printf("signal(SIGTSTP) errorFile");
-//	}
+
+
 
 	dup2(save_stdin, 0);
 	dup2(save_stdout, 1);
@@ -508,7 +514,7 @@ void exec_line(CmplxCommand *command) {
 char *read_line() {
 	char *line_entered = NULL;      //to contain the command line
 	ssize_t size_line = 0;
-	getline(&line_entered, &size_line, stdin);  //read the inputFile from command line
+	getline(&line_entered, &size_line, stdin);
 
 	return line_entered;
 }
@@ -520,13 +526,18 @@ char *read_line() {
  */
 int main(int argc, char *argv[]) {
 
+	if (signal(SIGINT, sig_int) == SIG_ERR)
+		printf("signal(SIGINT) errorFile");
+	if (signal(SIGTSTP, sig_tstp) == SIG_ERR)
+		printf("signal(SIGTSTP) errorFile");
+
 	char *command_line;
 	int pid[2];
 	char buf[10];
 
 	CmplxCommand *cmplxCmd;
 
-	while (1) {
+	while (!feof(stdin)) {
 		printf("# ");
 
 		command_line = read_line();
