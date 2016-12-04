@@ -27,10 +27,6 @@ enum FileType {
 };
 
 
-static void sig_hup(int signo) {
-	kill(getpid(), SIGTERM);
-}
-
 
 static void sig_int(int signo) {
 	printf("SIGINIT");
@@ -297,6 +293,9 @@ char * processRedirection
 
 
 	}
+
+	//NOT REACHED
+	return NULL;
 }
 
 
@@ -306,7 +305,7 @@ char * processRedirection
  */
 CmplxCommand *parseCmd(char *line) {
 
-	int num;
+
 	CmplxCommand *cmplxCmd = CmplxCmdConst();
 	BasicCommand *basicCmd = BasicCmdConst();
 
@@ -513,7 +512,7 @@ void exec_line(CmplxCommand *command) {
  */
 char *read_line() {
 	char *line_entered = NULL;      //to contain the command line
-	ssize_t size_line = 0;
+	size_t size_line = 0;
 	if(getline(&line_entered, &size_line, stdin) == -1)
 		exit(0);
 	return line_entered;
@@ -532,8 +531,7 @@ int main(int argc, char *argv[]) {
 		printf("signal(SIGTSTP) errorFile");
 
 	char *command_line;
-	int pid[2];
-	char buf[10];
+
 
 	CmplxCommand *cmplxCmd;
 

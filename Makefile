@@ -1,2 +1,5 @@
 all:
-	gcc -ggdb -o yash yash.c
+	gcc -Wall -Werror -g -o yash yash.c
+
+clean:
+	rm -f yash
